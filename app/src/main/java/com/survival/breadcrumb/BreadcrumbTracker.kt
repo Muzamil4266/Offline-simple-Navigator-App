@@ -20,9 +20,23 @@ object BreadcrumbTracker {
     private const val REACH_M = 10f           // pin counts as reached inside this radius
     private const val MAX_PINS = 4000
 
+    // ---- stationary detection
+    private const val MOVE_HOLD_MS = 8_000L   // steps this recent = user walking
+    private const val FAST_SPEED = 3f         // m/s: vehicle / running, trust GPS speed
+    private const val FAST_ACC = 12f
+    private const val MIN_MOVE_M = 8f         // no step sensor: must leave this circle
+    private const val JUMP_M = 40f            // step sensor on, but GPS far away (bike, car)
+    private const val JUMP_ACC = 10f
+    private const val STILL_STEP_MS = 20_000L // with step sensor: slow GPS sooner
+    private const val STILL_GPS_MS = 60_000L  // without step sensor
+
     val pins = ArrayList<Pin>()
 
+    /** Held position. Only moves when user really moves. */
     var current: Location? = null
+        private set
+    /** Latest raw GPS accuracy (m), -1 = none. */
+    var accuracy = -1f
         private set
     var returnMode = false
         private set
@@ -33,13 +47,17 @@ object BreadcrumbTracker {
     var lastMoveTime = SystemClock.elapsedRealtime()
         private set
 
+    /** Set by TrackerService when step sensor is registered and permitted. */
+    @Volatile
+    var stepActive = false
+
     /** UI hook. Set in onResume, cleared in onPause. */
     var onChange: (() -> Unit)? = null
 
     private var file: File? = null
     private var startedAt = SystemClock.elapsedRealtime()
     private var lastAcceptedAt = 0L
-    private var lastMovePos: Location? = null
+    private var lastStepTime = 0L
     private val out = FloatArray(1)
     private val tmp = Location("target")
 
@@ -55,6 +73,35 @@ object BreadcrumbTracker {
         load()
     }
 
+    // ----------------------------------------------------------- step input
+
+    /** Called by service on every step event. */
+    fun onSteps() {
+        val now = SystemClock.elapsedRealtime()
+        lastStepTime = now
+        lastMoveTime = now
+    }
+
+    /** True when no movement for a while. Service uses it to slow GPS. */
+    fun isStill(): Boolean {
+        val limit = if (stepActive) STILL_STEP_MS else STILL_GPS_MS
+        return SystemClock.elapsedRealtime() - lastMoveTime > limit
+    }
+
+    private fun isMoving(loc: Location, cur: Location, now: Long): Boolean {
+        val d = loc.distanceTo(cur)
+        // fast: GPS speed trusted (vehicle, bike)
+        if (loc.hasSpeed() && loc.speed > FAST_SPEED && loc.accuracy <= FAST_ACC && d > 3f) return true
+        return if (stepActive) {
+            val walking = lastStepTime != 0L && now - lastStepTime < MOVE_HOLD_MS
+            // walking AND GPS agrees we left the spot (pacing in a room does not count)
+            (walking && d > maxOf(3f, loc.accuracy * 0.6f)) ||
+                (d > JUMP_M && loc.accuracy <= JUMP_ACC)
+        } else {
+            d > maxOf(MIN_MOVE_M, loc.accuracy)
+        }
+    }
+
     // ------------------------------------------------------------ GPS input
 
     fun onLocation(loc: Location) {
@@ -64,20 +111,24 @@ object BreadcrumbTracker {
         if (!loc.hasAccuracy() || loc.accuracy > limit) return
 
         lastAcceptedAt = now
-        current = loc
+        accuracy = loc.accuracy
 
-        val mp = lastMovePos
-        if (mp == null || loc.distanceTo(mp) > maxOf(5f, loc.accuracy)) {
-            lastMovePos = loc
-            lastMoveTime = now
+        val cur = current
+        val moving = cur == null || pins.isEmpty() || isMoving(loc, cur, now)
+        if (!moving) {
+            // At rest: hold position. GPS drift ignored. No distance change, no pins.
+            onChange?.invoke()
+            return
         }
+
+        lastMoveTime = now
+        current = loc
 
         if (pins.isEmpty()) {
             addPin(loc, false) // START
         } else if (!returnMode) {
             val last = pins.last()
             val d = dist(loc.latitude, loc.longitude, last.lat, last.lon)
-            // d > accuracy: standing still with drift must not make pins
             if (d >= AUTO_PIN_M && d > loc.accuracy) addPin(loc, false)
         } else {
             updateReturn(loc)
@@ -115,7 +166,6 @@ object BreadcrumbTracker {
         returnMode = false
         arrived = false
         returnIdx = -1
-        lastMovePos = null
         try {
             file?.delete()
         } catch (e: SecurityException) {

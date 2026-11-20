@@ -23,6 +23,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.HapticFeedbackConstants
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
@@ -55,7 +56,6 @@ class MainActivity : Activity(), SensorEventListener {
     private lateinit var tvStatus: TextView
     private lateinit var tvCoords: TextView
     private lateinit var btnReturn: Button
-    private lateinit var btnMode: Button
     private lateinit var btnAwake: Button
 
     private val handler = Handler(Looper.getMainLooper())
@@ -111,12 +111,27 @@ class MainActivity : Activity(), SensorEventListener {
             need.add(Manifest.permission.ACCESS_FINE_LOCATION)
             need.add(Manifest.permission.ACCESS_COARSE_LOCATION)
         }
+        if (Build.VERSION.SDK_INT >= 29 &&
+            checkSelfPermission(Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED
+        ) {
+            need.add(Manifest.permission.ACTIVITY_RECOGNITION) // step sensor
+        }
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             need.add(Manifest.permission.POST_NOTIFICATIONS)
         }
         if (need.isNotEmpty()) requestPermissions(need.toTypedArray(), 1)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        // Service re-checks step permission on every start command.
+        if (hasFine()) startTracking()
     }
 
     private fun startTracking() {
@@ -144,9 +159,16 @@ class MainActivity : Activity(), SensorEventListener {
             textSize = sp
             setTextColor(fg)
             setTypeface(Typeface.DEFAULT_BOLD)
+            // Default Button has min height/width + padding: made rows too tall. Remove.
+            minHeight = 0
+            minimumHeight = 0
+            minWidth = 0
+            minimumWidth = 0
+            setPadding(dp(4), 0, dp(4), 0)
+            maxLines = 1
             background = GradientDrawable().apply {
                 setColor(bg)
-                cornerRadius = dp(12).toFloat()
+                cornerRadius = dp(10).toFloat()
             }
             setOnClickListener {
                 it.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
@@ -158,7 +180,7 @@ class MainActivity : Activity(), SensorEventListener {
         orientation = LinearLayout.HORIZONTAL
         for (x in b) {
             addView(x, LinearLayout.LayoutParams(0, dp(h), 1f).apply {
-                setMargins(dp(3), dp(3), dp(3), dp(3))
+                setMargins(dp(3), dp(2), dp(3), dp(2))
             })
         }
     }
@@ -179,10 +201,29 @@ class MainActivity : Activity(), SensorEventListener {
             setPadding(dp(10), dp(6), dp(10), dp(8))
         }
 
+        // targetSdk 35+ draws under status + nav bar. Pad root so bottom buttons stay on screen.
+        root.setOnApplyWindowInsetsListener { v, insets ->
+            if (Build.VERSION.SDK_INT >= 30) {
+                val i = insets.getInsets(
+                    WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
+                )
+                v.setPadding(i.left + dp(10), i.top + dp(6), i.right + dp(10), i.bottom + dp(8))
+            } else {
+                @Suppress("DEPRECATION")
+                v.setPadding(
+                    insets.systemWindowInsetLeft + dp(10),
+                    insets.systemWindowInsetTop + dp(6),
+                    insets.systemWindowInsetRight + dp(10),
+                    insets.systemWindowInsetBottom + dp(8)
+                )
+            }
+            insets
+        }
+
         // two big numbers
-        tvBig1 = label(38f, WHITE, true)
+        tvBig1 = label(34f, WHITE, true)
         tvLabel1 = label(11f, GRAY)
-        tvBig2 = label(38f, AMBER, true)
+        tvBig2 = label(34f, AMBER, true)
         tvLabel2 = label(11f, GRAY)
         val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         top.addView(column(tvBig1, tvLabel1), LinearLayout.LayoutParams(0, wrap, 1f))
@@ -193,31 +234,24 @@ class MainActivity : Activity(), SensorEventListener {
         tvStatus.setOnClickListener { requestMissingPermissions() }
         root.addView(tvStatus, LinearLayout.LayoutParams(match, wrap))
 
-        // radar
+        // line view
         canvasView = BreadcrumbCanvasView(this)
-        canvasView.setOnClickListener { canvasView.cycleZoom() }
         root.addView(canvasView, LinearLayout.LayoutParams(match, 0, 1f).apply {
             setMargins(0, dp(4), 0, dp(4))
         })
 
-        tvCoords = label(15f, WHITE).apply { typeface = Typeface.MONOSPACE }
+        tvCoords = label(14f, WHITE).apply { typeface = Typeface.MONOSPACE }
         root.addView(tvCoords, LinearLayout.LayoutParams(match, wrap))
 
-        // buttons
-        val btnPin = btn("DROP PIN", AMBER, BLACK, 20f) { dropPin() }
-        btnReturn = btn("RETURN", GREEN_BTN, BLACK, 20f) { toggleReturn() }
-        root.addView(row(66, btnPin, btnReturn), LinearLayout.LayoutParams(match, wrap))
+        // buttons: 2 compact rows
+        val btnPin = btn("DROP PIN", AMBER, BLACK, 17f) { dropPin() }
+        btnReturn = btn("RETURN", GREEN_BTN, BLACK, 17f) { toggleReturn() }
+        root.addView(row(52, btnPin, btnReturn), LinearLayout.LayoutParams(match, wrap))
 
-        btnMode = btn("FIT", DARK_BTN, WHITE, 15f) {
-            canvasView.follow = !canvasView.follow
-            refresh()
-        }
-        val btnShare = btn("SHARE POSITION", DARK_BTN, WHITE, 15f) { sharePosition() }
-        root.addView(row(52, btnMode, btnShare), LinearLayout.LayoutParams(match, wrap))
-
-        btnAwake = btn("SCREEN: ON", DARK_BTN, WHITE, 13f) { toggleAwake() }
-        val btnReset = btn("NEW TRAIL", DARK_BTN, RED, 13f) { confirmReset() }
-        root.addView(row(44, btnAwake, btnReset), LinearLayout.LayoutParams(match, wrap))
+        val btnShare = btn("SHARE", DARK_BTN, WHITE, 12f) { sharePosition() }
+        btnAwake = btn("SCREEN: ON", DARK_BTN, WHITE, 12f) { toggleAwake() }
+        val btnReset = btn("NEW TRAIL", DARK_BTN, RED, 12f) { confirmReset() }
+        root.addView(row(40, btnShare, btnAwake, btnReset), LinearLayout.LayoutParams(match, wrap))
 
         setContentView(root)
     }
@@ -248,7 +282,7 @@ class MainActivity : Activity(), SensorEventListener {
         awake = !awake
         if (awake) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        btnAwake.text = if (awake) "SCREEN: ON" else "SCREEN: AUTO-OFF"
+        btnAwake.text = if (awake) "SCREEN: ON" else "SCREEN: AUTO"
     }
 
     private fun confirmReset() {
@@ -320,15 +354,17 @@ class MainActivity : Activity(), SensorEventListener {
         tvBig2.text = fmt(t.distFromStart())
         tvLabel2.text = "FROM START - WALKED ${fmt(t.pathDistance())}"
 
+        val acc = t.accuracy.roundToInt()
         val weak = hasFine() && cur != null && t.gpsLost
         val gps = when {
             !hasFine() -> "LOCATION PERMISSION NEEDED (TAP HERE)"
             cur == null -> "SEARCHING GPS..."
-            weak -> "WEAK GPS - last fix +-${cur.accuracy.roundToInt()} m"
-            else -> "GPS +-${cur.accuracy.roundToInt()} m"
+            weak -> "WEAK GPS - last fix +-$acc m"
+            else -> "GPS +-$acc m"
         }
         val bat = battery()
-        tvStatus.text = "$gps  |  PINS ${t.pins.size}  |  BAT ${if (bat >= 0) "$bat%" else "?"}"
+        val step = if (t.stepActive) "STEP" else "NO STEP (TAP)"
+        tvStatus.text = "$gps  |  PINS ${t.pins.size}  |  BAT ${if (bat >= 0) "$bat%" else "?"}  |  $step"
         tvStatus.setTextColor(if (weak || !hasFine()) RED else GRAY)
 
         tvCoords.text = if (cur != null) {
@@ -340,7 +376,6 @@ class MainActivity : Activity(), SensorEventListener {
         val bg = btnReturn.background as GradientDrawable
         bg.setColor(if (t.returnMode) GREY_BTN else GREEN_BTN)
         btnReturn.setTextColor(if (t.returnMode) WHITE else BLACK)
-        btnMode.text = if (canvasView.follow) "SHOW FULL TRAIL" else "FOLLOW ME"
 
         if (cur != null) {
             declination = GeomagneticField(

@@ -1,0 +1,1317 @@
+
+C:\Shoby deathless laptop folder\Offline Navigator Guide Android App>(
+echo ================================================================================  
+ echo FILE: build.gradle.kts  
+ echo ================================================================================  
+ type "build.gradle.kts"  
+ echo. 
+ echo.
+) 
+================================================================================
+FILE: build.gradle.kts
+================================================================================
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.11.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20")
+    }
+}
+
+
+
+C:\Shoby deathless laptop folder\Offline Navigator Guide Android App>(
+echo ================================================================================  
+ echo FILE: settings.gradle.kts  
+ echo ================================================================================  
+ type "settings.gradle.kts"  
+ echo. 
+ echo.
+) 
+================================================================================
+FILE: settings.gradle.kts
+================================================================================
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "Breadcrumb"
+include(":app")
+
+
+
+C:\Shoby deathless laptop folder\Offline Navigator Guide Android App>(
+echo ================================================================================  
+ echo FILE: gradle.properties  
+ echo ================================================================================  
+ type "gradle.properties"  
+ echo. 
+ echo.
+) 
+================================================================================
+FILE: gradle.properties
+================================================================================
+org.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8
+android.useAndroidX=false
+kotlin.code.style=official
+
+
+
+C:\Shoby deathless laptop folder\Offline Navigator Guide Android App>(
+echo ================================================================================  
+ echo FILE: app\build.gradle.kts  
+ echo ================================================================================  
+ type "app\build.gradle.kts"  
+ echo. 
+ echo.
+) 
+================================================================================
+FILE: app\build.gradle.kts
+================================================================================
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
+
+android {
+    namespace = "com.survival.breadcrumb"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "com.survival.breadcrumb"
+        minSdk = 24
+        targetSdk = 36
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+
+
+C:\Shoby deathless laptop folder\Offline Navigator Guide Android App>(
+echo ================================================================================  
+ echo FILE: app\src\main\AndroidManifest.xml  
+ echo ================================================================================  
+ type "app\src\main\AndroidManifest.xml"  
+ echo. 
+ echo.
+) 
+================================================================================
+FILE: app\src\main\AndroidManifest.xml
+================================================================================
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@android:drawable/ic_menu_mylocation"
+        android:label="Breadcrumb"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".TrackerService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+    </application>
+</manifest>
+
+
+
+C:\Shoby deathless laptop folder\Offline Navigator Guide Android App>(
+echo ================================================================================  
+ echo FILE: app\src\main\res\values\styles.xml  
+ echo ================================================================================  
+ type "app\src\main\res\values\styles.xml"  
+ echo. 
+ echo.
+) 
+================================================================================
+FILE: app\src\main\res\values\styles.xml
+================================================================================
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:statusBarColor">#0B0F14</item>
+        <item name="android:navigationBarColor">#0B0F14</item>
+    </style>
+</resources>
+
+
+
+C:\Shoby deathless laptop folder\Offline Navigator Guide Android App>(
+echo ================================================================================  
+ echo FILE: app\src\main\java\com\survival\breadcrumb\MainActivity.kt  
+ echo ================================================================================  
+ type "app\src\main\java\com\survival\breadcrumb\MainActivity.kt"  
+ echo. 
+ echo.
+) 
+================================================================================
+FILE: app\src\main\java\com\survival\breadcrumb\MainActivity.kt
+================================================================================
+package com.survival.breadcrumb
+
+import android.Manifest
+import android.app.Activity
+import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.hardware.GeomagneticField
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.os.BatteryManager
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.HapticFeedbackConstants
+import android.view.ViewGroup
+import android.view.WindowManager
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
+import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.roundToInt
+
+class MainActivity : Activity(), SensorEventListener {
+
+    private companion object {
+        const val BG = 0xFF0B0F14.toInt()
+        const val WHITE = 0xFFFFFFFF.toInt()
+        const val GRAY = 0xFF8A97A3.toInt()
+        const val AMBER = 0xFFFFB300.toInt()
+        const val GREEN = 0xFF2EE66B.toInt()
+        const val RED = 0xFFFF5252.toInt()
+        const val BLACK = 0xFF000000.toInt()
+        const val DARK_BTN = 0xFF263340.toInt()
+        const val GREY_BTN = 0xFF455A64.toInt()
+        const val GREEN_BTN = 0xFF1FA85A.toInt()
+    }
+
+    private lateinit var canvasView: BreadcrumbCanvasView
+    private lateinit var tvBig1: TextView
+    private lateinit var tvLabel1: TextView
+    private lateinit var tvBig2: TextView
+    private lateinit var tvLabel2: TextView
+    private lateinit var tvStatus: TextView
+    private lateinit var tvCoords: TextView
+    private lateinit var btnReturn: Button
+    private lateinit var btnMode: Button
+    private lateinit var btnAwake: Button
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val ticker = object : Runnable {
+        override fun run() {
+            refresh()
+            handler.postDelayed(this, 1000)
+        }
+    }
+
+    private lateinit var sm: SensorManager
+    private var rot: Sensor? = null
+    private var compassMag = 0f      // magnetic heading, smoothed
+    private var declination = 0f
+    private var lastShownHeading = -999f
+    private var awake = true
+
+    // ------------------------------------------------------------ lifecycle
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        BreadcrumbTracker.init(this)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        sm = getSystemService(SENSOR_SERVICE) as SensorManager
+        rot = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+        buildUi()
+        requestMissingPermissions()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        BreadcrumbTracker.onChange = { refresh() }
+        rot?.let { sm.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) }
+        if (hasFine() && !TrackerService.running) startTracking()
+        handler.post(ticker)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        BreadcrumbTracker.onChange = null
+        sm.unregisterListener(this)
+        handler.removeCallbacks(ticker)
+    }
+
+    // ------------------------------------------------------------ permissions
+
+    private fun hasFine() =
+        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    private fun requestMissingPermissions() {
+        val need = ArrayList<String>()
+        if (!hasFine()) {
+            need.add(Manifest.permission.ACCESS_FINE_LOCATION)
+            need.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            need.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        if (need.isNotEmpty()) requestPermissions(need.toTypedArray(), 1)
+    }
+
+    private fun startTracking() {
+        val i = Intent(this, TrackerService::class.java)
+        try {
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(i) else startService(i)
+        } catch (e: Exception) {
+            tvStatus.text = "CANNOT START TRACKER"
+        }
+    }
+
+    // ------------------------------------------------------------------- UI
+
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+
+    private fun label(sp: Float, color: Int, bold: Boolean = false): TextView = TextView(this).apply {
+        textSize = sp
+        setTextColor(color)
+        if (bold) setTypeface(Typeface.DEFAULT_BOLD)
+    }
+
+    private fun btn(text: String, bg: Int, fg: Int, sp: Float, onClick: () -> Unit): Button =
+        Button(this).apply {
+            this.text = text
+            textSize = sp
+            setTextColor(fg)
+            setTypeface(Typeface.DEFAULT_BOLD)
+            background = GradientDrawable().apply {
+                setColor(bg)
+                cornerRadius = dp(12).toFloat()
+            }
+            setOnClickListener {
+                it.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                onClick()
+            }
+        }
+
+    private fun row(h: Int, vararg b: Button): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        for (x in b) {
+            addView(x, LinearLayout.LayoutParams(0, dp(h), 1f).apply {
+                setMargins(dp(3), dp(3), dp(3), dp(3))
+            })
+        }
+    }
+
+    private fun column(big: TextView, small: TextView): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        addView(big)
+        addView(small)
+    }
+
+    private fun buildUi() {
+        val match = ViewGroup.LayoutParams.MATCH_PARENT
+        val wrap = ViewGroup.LayoutParams.WRAP_CONTENT
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(BG)
+            setPadding(dp(10), dp(6), dp(10), dp(8))
+        }
+
+        // two big numbers
+        tvBig1 = label(38f, WHITE, true)
+        tvLabel1 = label(11f, GRAY)
+        tvBig2 = label(38f, AMBER, true)
+        tvLabel2 = label(11f, GRAY)
+        val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        top.addView(column(tvBig1, tvLabel1), LinearLayout.LayoutParams(0, wrap, 1f))
+        top.addView(column(tvBig2, tvLabel2), LinearLayout.LayoutParams(0, wrap, 1f))
+        root.addView(top, LinearLayout.LayoutParams(match, wrap))
+
+        tvStatus = label(12f, GRAY)
+        tvStatus.setOnClickListener { requestMissingPermissions() }
+        root.addView(tvStatus, LinearLayout.LayoutParams(match, wrap))
+
+        // radar
+        canvasView = BreadcrumbCanvasView(this)
+        canvasView.setOnClickListener { canvasView.cycleZoom() }
+        root.addView(canvasView, LinearLayout.LayoutParams(match, 0, 1f).apply {
+            setMargins(0, dp(4), 0, dp(4))
+        })
+
+        tvCoords = label(15f, WHITE).apply { typeface = Typeface.MONOSPACE }
+        root.addView(tvCoords, LinearLayout.LayoutParams(match, wrap))
+
+        // buttons
+        val btnPin = btn("DROP PIN", AMBER, BLACK, 20f) { dropPin() }
+        btnReturn = btn("RETURN", GREEN_BTN, BLACK, 20f) { toggleReturn() }
+        root.addView(row(66, btnPin, btnReturn), LinearLayout.LayoutParams(match, wrap))
+
+        btnMode = btn("FIT", DARK_BTN, WHITE, 15f) {
+            canvasView.follow = !canvasView.follow
+            refresh()
+        }
+        val btnShare = btn("SHARE POSITION", DARK_BTN, WHITE, 15f) { sharePosition() }
+        root.addView(row(52, btnMode, btnShare), LinearLayout.LayoutParams(match, wrap))
+
+        btnAwake = btn("SCREEN: ON", DARK_BTN, WHITE, 13f) { toggleAwake() }
+        val btnReset = btn("NEW TRAIL", DARK_BTN, RED, 13f) { confirmReset() }
+        root.addView(row(44, btnAwake, btnReset), LinearLayout.LayoutParams(match, wrap))
+
+        setContentView(root)
+    }
+
+    // -------------------------------------------------------------- actions
+
+    private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
+
+    private fun dropPin() {
+        val t = BreadcrumbTracker
+        when {
+            t.returnMode -> toast("Return mode. Tap TRACK first.")
+            !t.dropManual() -> toast("No GPS fix yet.")
+            else -> toast("Pin dropped.")
+        }
+    }
+
+    private fun toggleReturn() {
+        val t = BreadcrumbTracker
+        when {
+            t.returnMode -> t.stopReturn()
+            t.pins.isEmpty() -> toast("No trail yet.")
+            else -> t.startReturn()
+        }
+    }
+
+    private fun toggleAwake() {
+        awake = !awake
+        if (awake) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        btnAwake.text = if (awake) "SCREEN: ON" else "SCREEN: AUTO-OFF"
+    }
+
+    private fun confirmReset() {
+        AlertDialog.Builder(this)
+            .setTitle("Erase trail?")
+            .setMessage("All pins deleted. Cannot undo.")
+            .setPositiveButton("ERASE") { _, _ -> BreadcrumbTracker.reset() }
+            .setNegativeButton("CANCEL", null)
+            .show()
+    }
+
+    private fun sharePosition() {
+        val c = BreadcrumbTracker.current
+        if (c == null) {
+            toast("No GPS fix yet.")
+            return
+        }
+        val lat = String.format(Locale.US, "%.6f", c.latitude)
+        val lon = String.format(Locale.US, "%.6f", c.longitude)
+        val text = "I need help. My position: $lat, $lon (accuracy ${c.accuracy.roundToInt()} m). " +
+            "https://maps.google.com/?q=$lat,$lon"
+        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        cm.setPrimaryClip(ClipData.newPlainText("position", text))
+        toast("Copied.")
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        try {
+            startActivity(Intent.createChooser(send, "Send position"))
+        } catch (e: Exception) {
+            // clipboard copy already done
+        }
+    }
+
+    // -------------------------------------------------------------- refresh
+
+    private fun fmt(m: Float?): String = when {
+        m == null -> "--"
+        m < 1000f -> "${m.roundToInt()} m"
+        else -> String.format(Locale.US, "%.1f km", m / 1000f)
+    }
+
+    private fun battery(): Int {
+        val i = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return -1
+        val level = i.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+        val scale = i.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
+        return if (level < 0 || scale <= 0) -1 else level * 100 / scale
+    }
+
+    private fun refresh() {
+        val t = BreadcrumbTracker
+        val cur = t.current
+
+        if (t.returnMode) {
+            if (t.arrived) {
+                tvBig1.text = "HOME"
+                tvLabel1.text = "ARRIVED AT START"
+            } else {
+                tvBig1.text = fmt(t.targetDistance())
+                tvLabel1.text = "TO NEXT PIN - ${t.pinsLeft()} LEFT"
+            }
+            tvBig1.setTextColor(GREEN)
+        } else {
+            tvBig1.text = fmt(t.distFromLastPin())
+            tvLabel1.text = "FROM LAST PIN"
+            tvBig1.setTextColor(WHITE)
+        }
+        tvBig2.text = fmt(t.distFromStart())
+        tvLabel2.text = "FROM START - WALKED ${fmt(t.pathDistance())}"
+
+        val weak = hasFine() && cur != null && t.gpsLost
+        val gps = when {
+            !hasFine() -> "LOCATION PERMISSION NEEDED (TAP HERE)"
+            cur == null -> "SEARCHING GPS..."
+            weak -> "WEAK GPS - last fix +-${cur.accuracy.roundToInt()} m"
+            else -> "GPS +-${cur.accuracy.roundToInt()} m"
+        }
+        val bat = battery()
+        tvStatus.text = "$gps  |  PINS ${t.pins.size}  |  BAT ${if (bat >= 0) "$bat%" else "?"}"
+        tvStatus.setTextColor(if (weak || !hasFine()) RED else GRAY)
+
+        tvCoords.text = if (cur != null) {
+            String.format(Locale.US, "%.6f, %.6f", cur.latitude, cur.longitude)
+        } else "-- , --"
+
+        // return button look
+        btnReturn.text = if (t.returnMode) "TRACK" else "RETURN"
+        val bg = btnReturn.background as GradientDrawable
+        bg.setColor(if (t.returnMode) GREY_BTN else GREEN_BTN)
+        btnReturn.setTextColor(if (t.returnMode) WHITE else BLACK)
+        btnMode.text = if (canvasView.follow) "SHOW FULL TRAIL" else "FOLLOW ME"
+
+        if (cur != null) {
+            declination = GeomagneticField(
+                cur.latitude.toFloat(), cur.longitude.toFloat(), cur.altitude.toFloat(),
+                System.currentTimeMillis()
+            ).declination
+        }
+        applyHeading()
+        canvasView.invalidate()
+    }
+
+    // -------------------------------------------------------------- compass
+
+    private fun norm(d: Float): Float = ((d % 360f) + 360f) % 360f
+
+    private fun applyHeading() {
+        val cur = BreadcrumbTracker.current
+        val h: Float = if (rot != null) {
+            norm(compassMag + declination)
+        } else if (cur != null && cur.hasBearing() && cur.speed > 0.8f) {
+            cur.bearing // no compass: GPS course works only while moving
+        } else {
+            canvasView.headingDeg
+        }
+        if (abs(h - lastShownHeading) > 1f) {
+            lastShownHeading = h
+            canvasView.headingDeg = h
+            canvasView.invalidate()
+        }
+    }
+
+    override fun onSensorChanged(event: SensorEvent) {
+        if (event.sensor.type != Sensor.TYPE_ROTATION_VECTOR) return
+        val rm = FloatArray(9)
+        SensorManager.getRotationMatrixFromVector(rm, event.values)
+        // Phone held upright (normal walking pose): heading of the back camera direction.
+        val use = if (abs(rm[8]) < 0.7f) {
+            val r2 = FloatArray(9)
+            SensorManager.remapCoordinateSystem(rm, SensorManager.AXIS_X, SensorManager.AXIS_Z, r2)
+            r2
+        } else rm
+        val o = FloatArray(3)
+        SensorManager.getOrientation(use, o)
+        val az = norm(Math.toDegrees(o[0].toDouble()).toFloat())
+        val delta = ((az - compassMag + 540f) % 360f) - 180f
+        compassMag = norm(compassMag + 0.2f * delta)
+        applyHeading()
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+}
+
+
+
+C:\Shoby deathless laptop folder\Offline Navigator Guide Android App>(
+echo ================================================================================  
+ echo FILE: app\src\main\java\com\survival\breadcrumb\TrackerService.kt  
+ echo ================================================================================  
+ type "app\src\main\java\com\survival\breadcrumb\TrackerService.kt"  
+ echo. 
+ echo.
+) 
+================================================================================
+FILE: app\src\main\java\com\survival\breadcrumb\TrackerService.kt
+================================================================================
+package com.survival.breadcrumb
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.graphics.drawable.Icon
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.os.Build
+import android.os.Bundle
+import android.os.IBinder
+import android.os.Looper
+import android.os.SystemClock
+
+/** Keeps GPS + trail alive when screen is off or app is in background. */
+class TrackerService : Service(), LocationListener {
+
+    companion object {
+        const val ACTION_STOP = "com.survival.breadcrumb.STOP"
+        private const val CHANNEL = "trail"
+        private const val NOTIF_ID = 1
+        private const val FAST_MS = 1000L
+        private const val SLOW_MS = 5000L
+        private const val STILL_AFTER_MS = 60_000L
+
+        @Volatile
+        var running = false
+    }
+
+    private lateinit var lm: LocationManager
+    private var registered = false
+    private var slow = false
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        BreadcrumbTracker.init(this)
+        lm = getSystemService(LOCATION_SERVICE) as LocationManager
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_STOP) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        try {
+            startInForeground()
+        } catch (e: Exception) {
+            // Android refused foreground start (background restart rules). Give up cleanly.
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        running = true
+        if (!registered) {
+            registered = request(false)
+            if (!registered) {
+                stopSelf()
+                return START_NOT_STICKY
+            }
+        }
+        return START_STICKY
+    }
+
+    override fun onDestroy() {
+        try {
+            lm.removeUpdates(this)
+        } catch (e: SecurityException) {
+            // ignore
+        }
+        registered = false
+        running = false
+        super.onDestroy()
+    }
+
+    // ------------------------------------------------------------------ GPS
+
+    private fun request(slowMode: Boolean): Boolean {
+        return try {
+            lm.removeUpdates(this)
+            lm.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                if (slowMode) SLOW_MS else FAST_MS,
+                0f,
+                this,
+                Looper.getMainLooper()
+            )
+            slow = slowMode
+            true
+        } catch (e: SecurityException) {
+            false
+        } catch (e: IllegalArgumentException) {
+            false
+        }
+    }
+
+    override fun onLocationChanged(location: Location) {
+        BreadcrumbTracker.onLocation(location)
+        // Battery saver: standing still for a minute -> poll slower.
+        val still = SystemClock.elapsedRealtime() - BreadcrumbTracker.lastMoveTime > STILL_AFTER_MS
+        if (still != slow) request(still)
+    }
+
+    // Must be implemented for API < 30.
+    @Deprecated("Deprecated in Java")
+    override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+
+    override fun onProviderEnabled(provider: String) {}
+
+    override fun onProviderDisabled(provider: String) {}
+
+    // --------------------------------------------------------- notification
+
+    @Suppress("DEPRECATION")
+    private fun startInForeground() {
+        if (Build.VERSION.SDK_INT >= 26) {
+            val nm = getSystemService(NotificationManager::class.java)
+            if (nm.getNotificationChannel(CHANNEL) == null) {
+                nm.createNotificationChannel(
+                    NotificationChannel(CHANNEL, "Trail tracking", NotificationManager.IMPORTANCE_LOW)
+                )
+            }
+        }
+        val open = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE
+        )
+        val stop = PendingIntent.getService(
+            this, 1,
+            Intent(this, TrackerService::class.java).setAction(ACTION_STOP),
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        val b = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL)
+        else Notification.Builder(this)
+        val action = Notification.Action.Builder(
+            Icon.createWithResource(this, android.R.drawable.ic_menu_close_clear_cancel),
+            "STOP",
+            stop
+        ).build()
+        val n = b.setSmallIcon(android.R.drawable.ic_menu_mylocation)
+            .setContentTitle("Breadcrumb tracking")
+            .setContentText("Recording trail. Tap to open.")
+            .setContentIntent(open)
+            .setOngoing(true)
+            .addAction(action)
+            .build()
+
+        if (Build.VERSION.SDK_INT >= 29) {
+            startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+        } else {
+            startForeground(NOTIF_ID, n)
+        }
+    }
+}
+
+
+
+C:\Shoby deathless laptop folder\Offline Navigator Guide Android App>(
+echo ================================================================================  
+ echo FILE: app\src\main\java\com\survival\breadcrumb\BreadcrumbTracker.kt  
+ echo ================================================================================  
+ type "app\src\main\java\com\survival\breadcrumb\BreadcrumbTracker.kt"  
+ echo. 
+ echo.
+) 
+================================================================================
+FILE: app\src\main\java\com\survival\breadcrumb\BreadcrumbTracker.kt
+================================================================================
+package com.survival.breadcrumb
+
+import android.content.Context
+import android.location.Location
+import android.os.SystemClock
+import java.io.File
+import java.io.IOException
+
+data class Pin(val lat: Double, val lon: Double, val manual: Boolean, val time: Long)
+
+/**
+ * Pure logic + shared state. Lives in the process, used by TrackerService (writes)
+ * and MainActivity (reads). Everything runs on the main thread.
+ */
+object BreadcrumbTracker {
+    const val AUTO_PIN_M = 30f
+    private const val GOOD_ACC = 18f          // normal accuracy gate (m)
+    private const val WEAK_ACC = 35f          // relaxed gate after 30 s without good fix
+    private const val WEAK_AFTER_MS = 30_000L
+    private const val REACH_M = 10f           // pin counts as reached inside this radius
+    private const val MAX_PINS = 4000
+
+    val pins = ArrayList<Pin>()
+
+    var current: Location? = null
+        private set
+    var returnMode = false
+        private set
+    var returnIdx = -1
+        private set
+    var arrived = false
+        private set
+    var lastMoveTime = SystemClock.elapsedRealtime()
+        private set
+
+    /** UI hook. Set in onResume, cleared in onPause. */
+    var onChange: (() -> Unit)? = null
+
+    private var file: File? = null
+    private var startedAt = SystemClock.elapsedRealtime()
+    private var lastAcceptedAt = 0L
+    private var lastMovePos: Location? = null
+    private val out = FloatArray(1)
+    private val tmp = Location("target")
+
+    val gpsLost: Boolean
+        get() = SystemClock.elapsedRealtime() - maxOf(lastAcceptedAt, startedAt) > WEAK_AFTER_MS
+
+    // ---------------------------------------------------------------- setup
+
+    fun init(ctx: Context) {
+        if (file != null) return
+        file = File(ctx.applicationContext.filesDir, "trail.csv")
+        startedAt = SystemClock.elapsedRealtime()
+        load()
+    }
+
+    // ------------------------------------------------------------ GPS input
+
+    fun onLocation(loc: Location) {
+        val now = SystemClock.elapsedRealtime()
+        val sinceGood = now - maxOf(lastAcceptedAt, startedAt)
+        val limit = if (sinceGood < WEAK_AFTER_MS) GOOD_ACC else WEAK_ACC
+        if (!loc.hasAccuracy() || loc.accuracy > limit) return
+
+        lastAcceptedAt = now
+        current = loc
+
+        val mp = lastMovePos
+        if (mp == null || loc.distanceTo(mp) > maxOf(5f, loc.accuracy)) {
+            lastMovePos = loc
+            lastMoveTime = now
+        }
+
+        if (pins.isEmpty()) {
+            addPin(loc, false) // START
+        } else if (!returnMode) {
+            val last = pins.last()
+            val d = dist(loc.latitude, loc.longitude, last.lat, last.lon)
+            // d > accuracy: standing still with drift must not make pins
+            if (d >= AUTO_PIN_M && d > loc.accuracy) addPin(loc, false)
+        } else {
+            updateReturn(loc)
+        }
+        onChange?.invoke()
+    }
+
+    // ------------------------------------------------------------- actions
+
+    fun dropManual(): Boolean {
+        val c = current ?: return false
+        if (returnMode) return false
+        addPin(c, true)
+        onChange?.invoke()
+        return true
+    }
+
+    fun startReturn() {
+        if (pins.isEmpty()) return
+        returnMode = true
+        arrived = false
+        returnIdx = pins.lastIndex
+        current?.let { updateReturn(it) }
+        onChange?.invoke()
+    }
+
+    fun stopReturn() {
+        returnMode = false
+        arrived = false
+        onChange?.invoke()
+    }
+
+    fun reset() {
+        pins.clear()
+        returnMode = false
+        arrived = false
+        returnIdx = -1
+        lastMovePos = null
+        try {
+            file?.delete()
+        } catch (e: SecurityException) {
+            // ignore
+        }
+        onChange?.invoke()
+    }
+
+    // ------------------------------------------------------------- queries
+
+    fun distFromLastPin(): Float? {
+        val c = current ?: return null
+        val p = pins.lastOrNull() ?: return null
+        return dist(c.latitude, c.longitude, p.lat, p.lon)
+    }
+
+    fun distFromStart(): Float? {
+        val c = current ?: return null
+        val p = pins.firstOrNull() ?: return null
+        return dist(c.latitude, c.longitude, p.lat, p.lon)
+    }
+
+    /** Total walked length along pins (+ live leg). */
+    fun pathDistance(): Float {
+        var sum = 0f
+        for (i in 1 until pins.size) {
+            sum += dist(pins[i - 1].lat, pins[i - 1].lon, pins[i].lat, pins[i].lon)
+        }
+        val c = current
+        val last = pins.lastOrNull()
+        if (c != null && last != null) sum += dist(c.latitude, c.longitude, last.lat, last.lon)
+        return sum
+    }
+
+    fun target(): Pin? =
+        if (returnMode && !arrived && returnIdx in pins.indices) pins[returnIdx] else null
+
+    fun pinsLeft(): Int = if (returnMode && !arrived) returnIdx + 1 else 0
+
+    fun targetDistance(): Float? {
+        val c = current ?: return null
+        val t = target() ?: return null
+        return dist(c.latitude, c.longitude, t.lat, t.lon)
+    }
+
+    /** Bearing to next return pin, degrees clockwise from true north. */
+    fun targetBearing(): Float? {
+        val c = current ?: return null
+        val t = target() ?: return null
+        tmp.latitude = t.lat
+        tmp.longitude = t.lon
+        return c.bearingTo(tmp)
+    }
+
+    // ------------------------------------------------------------ internals
+
+    private fun updateReturn(loc: Location) {
+        if (arrived) return
+        val reach = maxOf(REACH_M, loc.accuracy)
+        while (returnIdx >= 0) {
+            val p = pins[returnIdx]
+            val d = dist(loc.latitude, loc.longitude, p.lat, p.lon)
+            if (d <= reach) {
+                returnIdx--
+                continue
+            }
+            // Cut corner: already closer to the pin before this one -> skip this one.
+            if (returnIdx > 0) {
+                val prev = pins[returnIdx - 1]
+                if (dist(loc.latitude, loc.longitude, prev.lat, prev.lon) < d) {
+                    returnIdx--
+                    continue
+                }
+            }
+            break
+        }
+        if (returnIdx < 0) {
+            arrived = true
+            returnIdx = 0
+        }
+    }
+
+    private fun addPin(loc: Location, manual: Boolean) {
+        val p = Pin(loc.latitude, loc.longitude, manual, System.currentTimeMillis())
+        pins.add(p)
+        try {
+            file?.appendText(line(p))
+        } catch (e: IOException) {
+            // storage trouble: keep tracking in memory
+        }
+        if (pins.size > MAX_PINS) thin()
+    }
+
+    /** Memory cap: drop every second auto pin. Keeps START, last pin, manual pins. */
+    private fun thin() {
+        val keep = ArrayList<Pin>()
+        var skip = false
+        for ((i, p) in pins.withIndex()) {
+            if (i == 0 || i == pins.lastIndex || p.manual) {
+                keep.add(p)
+            } else {
+                if (!skip) keep.add(p)
+                skip = !skip
+            }
+        }
+        pins.clear()
+        pins.addAll(keep)
+        if (returnIdx > pins.lastIndex) returnIdx = pins.lastIndex
+        try {
+            file?.writeText(pins.joinToString("") { line(it) })
+        } catch (e: IOException) {
+            // ignore
+        }
+    }
+
+    private fun line(p: Pin) = "${p.lat},${p.lon},${if (p.manual) 1 else 0},${p.time}\n"
+
+    private fun load() {
+        val f = file ?: return
+        if (!f.exists()) return
+        try {
+            f.forEachLine { l ->
+                val s = l.split(',')
+                if (s.size >= 4) {
+                    try {
+                        pins.add(Pin(s[0].toDouble(), s[1].toDouble(), s[2] == "1", s[3].toLong()))
+                    } catch (e: NumberFormatException) {
+                        // skip bad line
+                    }
+                }
+            }
+        } catch (e: IOException) {
+            // ignore
+        }
+    }
+
+    private fun dist(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Float {
+        Location.distanceBetween(lat1, lon1, lat2, lon2, out)
+        return out[0]
+    }
+}
+
+
+
+C:\Shoby deathless laptop folder\Offline Navigator Guide Android App>(
+echo ================================================================================  
+ echo FILE: app\src\main\java\com\survival\breadcrumb\BreadcrumbCanvasView.kt  
+ echo ================================================================================  
+ type "app\src\main\java\com\survival\breadcrumb\BreadcrumbCanvasView.kt"  
+ echo. 
+ echo.
+) 
+================================================================================
+FILE: app\src\main\java\com\survival\breadcrumb\BreadcrumbCanvasView.kt
+================================================================================
+package com.survival.breadcrumb
+
+import android.content.Context
+import android.graphics.Canvas
+import android.graphics.DashPathEffect
+import android.graphics.Paint
+import android.graphics.Path
+import android.view.View
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sin
+
+/** Dark 2D radar. No tiles. North is up. Tap = cycle zoom (FOLLOW mode). */
+class BreadcrumbCanvasView(ctx: Context) : View(ctx) {
+
+    var follow = true
+    var headingDeg = 0f // true-north heading of phone
+
+    private val zooms = floatArrayOf(60f, 120f, 250f, 500f)
+    private var zoomIdx = 1
+    private val dp = resources.displayMetrics.density
+    private val mDeg = 111_320.0
+
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val path = Path()
+    private val arrow = Path()
+
+    private var refLat = 0.0
+    private var refLon = 0.0
+    private var cosLat = 1.0
+    private var scale = 1f
+    private var cx = 0f
+    private var cy = 0f
+
+    private companion object {
+        const val BG = 0xFF0B0F14.toInt()
+        const val RING = 0xFF1E2A36.toInt()
+        const val RING_TXT = 0xFF55657A.toInt()
+        const val TRAIL = 0xFF3B6FA0.toInt()
+        const val AUTO = 0xFFB0BEC5.toInt()
+        const val AMBER = 0xFFFFB300.toInt()
+        const val GREEN = 0xFF2EE66B.toInt()
+        const val BLUE = 0xFF2E9BFF.toInt()
+        const val WHITE = 0xFFFFFFFF.toInt()
+        const val PANEL = 0xDD14202B.toInt()
+    }
+
+    fun cycleZoom() {
+        zoomIdx = (zoomIdx + 1) % zooms.size
+        invalidate()
+    }
+
+    private fun sx(lon: Double): Float = cx + ((lon - refLon) * mDeg * cosLat * scale).toFloat()
+    private fun sy(lat: Double): Float = cy - ((lat - refLat) * mDeg * scale).toFloat()
+
+    override fun onDraw(c: Canvas) {
+        val w = width.toFloat()
+        val h = height.toFloat()
+        c.drawColor(BG)
+
+        val t = BreadcrumbTracker
+        val cur = t.current
+        val pins = t.pins
+
+        if (cur == null && pins.isEmpty()) {
+            paint.style = Paint.Style.FILL
+            paint.color = RING_TXT
+            paint.textSize = 18 * dp
+            paint.textAlign = Paint.Align.CENTER
+            c.drawText("WAITING FOR GPS...", w / 2, h / 2, paint)
+            paint.textAlign = Paint.Align.LEFT
+            return
+        }
+
+        cx = w / 2
+        cy = h / 2
+
+        // ---- projection setup
+        if (follow && cur != null) {
+            refLat = cur.latitude
+            refLon = cur.longitude
+            cosLat = cos(Math.toRadians(refLat))
+            scale = (min(w, h) / 2f * 0.92f) / zooms[zoomIdx]
+        } else {
+            var minLat = Double.MAX_VALUE
+            var maxLat = -Double.MAX_VALUE
+            var minLon = Double.MAX_VALUE
+            var maxLon = -Double.MAX_VALUE
+            for (p in pins) {
+                minLat = min(minLat, p.lat); maxLat = max(maxLat, p.lat)
+                minLon = min(minLon, p.lon); maxLon = max(maxLon, p.lon)
+            }
+            if (cur != null) {
+                minLat = min(minLat, cur.latitude); maxLat = max(maxLat, cur.latitude)
+                minLon = min(minLon, cur.longitude); maxLon = max(maxLon, cur.longitude)
+            }
+            refLat = (minLat + maxLat) / 2
+            refLon = (minLon + maxLon) / 2
+            cosLat = cos(Math.toRadians(refLat))
+            val ext = max((maxLat - minLat) * mDeg, (maxLon - minLon) * mDeg * cosLat).toFloat()
+            scale = min(w, h) * 0.8f / max(ext, 60f)
+        }
+
+        // ---- distance rings around live position (FOLLOW only)
+        if (follow && cur != null) {
+            val px = sx(cur.longitude)
+            val py = sy(cur.latitude)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 1.5f * dp
+            for (r in intArrayOf(30, 60, 100)) {
+                val rad = r * scale
+                paint.color = RING
+                c.drawCircle(px, py, rad, paint)
+                if (rad > 20 * dp) {
+                    paint.style = Paint.Style.FILL
+                    paint.color = RING_TXT
+                    paint.textSize = 11 * dp
+                    c.drawText("${r}m", px + 4 * dp, py - rad + 13 * dp, paint)
+                    paint.style = Paint.Style.STROKE
+                }
+            }
+        }
+
+        // ---- trail
+        if (pins.isNotEmpty()) {
+            path.reset()
+            path.moveTo(sx(pins[0].lon), sy(pins[0].lat))
+            for (i in 1 until pins.size) path.lineTo(sx(pins[i].lon), sy(pins[i].lat))
+            if (cur != null) path.lineTo(sx(cur.longitude), sy(cur.latitude))
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 3 * dp
+            paint.strokeJoin = Paint.Join.ROUND
+            paint.color = TRAIL
+            c.drawPath(path, paint)
+        }
+
+        // ---- return route highlight (dashed green): you -> next pin -> ... -> START
+        if (t.returnMode && !t.arrived && t.returnIdx in pins.indices) {
+            path.reset()
+            if (cur != null) {
+                path.moveTo(sx(cur.longitude), sy(cur.latitude))
+                path.lineTo(sx(pins[t.returnIdx].lon), sy(pins[t.returnIdx].lat))
+            } else {
+                path.moveTo(sx(pins[t.returnIdx].lon), sy(pins[t.returnIdx].lat))
+            }
+            for (i in t.returnIdx - 1 downTo 0) path.lineTo(sx(pins[i].lon), sy(pins[i].lat))
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 4 * dp
+            paint.color = GREEN
+            paint.pathEffect = DashPathEffect(floatArrayOf(14 * dp, 8 * dp), 0f)
+            c.drawPath(path, paint)
+            paint.pathEffect = null
+        }
+
+        // ---- pins
+        paint.style = Paint.Style.FILL
+        for ((i, p) in pins.withIndex()) {
+            val x = sx(p.lon)
+            val y = sy(p.lat)
+            when {
+                i == 0 -> {
+                    paint.color = GREEN
+                    c.drawCircle(x, y, 10 * dp, paint)
+                    paint.color = BG
+                    paint.textSize = 12 * dp
+                    paint.textAlign = Paint.Align.CENTER
+                    c.drawText("S", x, y + 4.5f * dp, paint)
+                    paint.textAlign = Paint.Align.LEFT
+                }
+                p.manual -> {
+                    paint.color = AMBER
+                    c.drawCircle(x, y, 8 * dp, paint)
+                }
+                else -> {
+                    paint.color = AUTO
+                    c.drawCircle(x, y, 3.5f * dp, paint)
+                }
+            }
+            if (t.returnMode && !t.arrived && i == t.returnIdx) {
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 3 * dp
+                paint.color = WHITE
+                c.drawCircle(x, y, 14 * dp, paint)
+                paint.style = Paint.Style.FILL
+            }
+        }
+
+        // ---- you
+        if (cur != null) {
+            val x = sx(cur.longitude)
+            val y = sy(cur.latitude)
+            val rad = Math.toRadians(headingDeg.toDouble())
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 3 * dp
+            paint.color = BLUE
+            c.drawLine(
+                x, y,
+                x + (sin(rad) * 28 * dp).toFloat(),
+                y - (cos(rad) * 28 * dp).toFloat(),
+                paint
+            )
+            paint.style = Paint.Style.FILL
+            paint.color = BLUE
+            c.drawCircle(x, y, 8 * dp, paint)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 2 * dp
+            paint.color = WHITE
+            c.drawCircle(x, y, 8 * dp, paint)
+        }
+
+        // ---- north marker (top-left)
+        paint.style = Paint.Style.FILL
+        paint.color = WHITE
+        arrow.reset()
+        arrow.moveTo(18 * dp, 8 * dp)
+        arrow.lineTo(26 * dp, 24 * dp)
+        arrow.lineTo(10 * dp, 24 * dp)
+        arrow.close()
+        c.drawPath(arrow, paint)
+        paint.textSize = 14 * dp
+        paint.textAlign = Paint.Align.CENTER
+        c.drawText("N", 18 * dp, 42 * dp, paint)
+        paint.textAlign = Paint.Align.LEFT
+
+        // ---- zoom hint (bottom-left)
+        paint.color = RING_TXT
+        paint.textSize = 12 * dp
+        val hint = if (follow) "ZOOM ${zooms[zoomIdx].toInt()} m  (TAP)" else "FULL TRAIL"
+        c.drawText(hint, 8 * dp, h - 8 * dp, paint)
+
+        // ---- return arrow (top-right), rotates with phone heading
+        if (t.returnMode) {
+            val ax = w - 62 * dp
+            val ay = 62 * dp
+            paint.style = Paint.Style.FILL
+            paint.color = PANEL
+            c.drawCircle(ax, ay, 54 * dp, paint)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 2 * dp
+            paint.color = GREEN
+            c.drawCircle(ax, ay, 54 * dp, paint)
+
+            if (t.arrived) {
+                paint.style = Paint.Style.FILL
+                paint.textSize = 20 * dp
+                paint.textAlign = Paint.Align.CENTER
+                c.drawText("HOME", ax, ay + 7 * dp, paint)
+                paint.textAlign = Paint.Align.LEFT
+            } else {
+                val b = t.targetBearing()
+                if (b != null) {
+                    c.save()
+                    c.rotate(b - headingDeg, ax, ay)
+                    arrow.reset()
+                    arrow.moveTo(ax, ay - 42 * dp)
+                    arrow.lineTo(ax + 26 * dp, ay + 30 * dp)
+                    arrow.lineTo(ax, ay + 14 * dp)
+                    arrow.lineTo(ax - 26 * dp, ay + 30 * dp)
+                    arrow.close()
+                    paint.style = Paint.Style.FILL
+                    paint.color = GREEN
+                    c.drawPath(arrow, paint)
+                    c.restore()
+                }
+            }
+        }
+    }
+}
+
+
